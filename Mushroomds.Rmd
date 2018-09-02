@@ -1,0 +1,58 @@
+---
+title: "Mushroomds"
+author: "Vijaya Cherukuri"
+date: "September 2, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(tidyverse)
+mushroomds <- read.csv(url("https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data"), header = FALSE, sep =",")
+mushroomds <- mushroomds[c(1,2,3,5)]
+head(mushroomds, 20)
+colnames(mushroomds) <- c("Class","Shape","Continent","Soiltype")
+
+levels(mushroomds$`Class`) <- c(levels(mushroomds$`Class`), c("Poisonous","Edible"))
+mushroomds$`Class`[mushroomds$`Class` == "p"] <- "Poisonous"
+mushroomds$`Class`[mushroomds$`Class` == "e"] <- "Edible"
+
+levels(mushroomds$`Shape`) <- c(levels(mushroomds$`Shape`), c("Bell","Tilted","Curved","Cone","Convex","Flat"))
+mushroomds$`Shape`[mushroomds$`Shape` == "b"] <- "Bell"
+mushroomds$`Shape`[mushroomds$`Shape` == "c"] <- "Tilted"
+mushroomds$`Shape`[mushroomds$`Shape` == "f"] <- "Curved"
+mushroomds$`Shape`[mushroomds$`Shape` == "k"] <- "Cone"
+mushroomds$`Shape`[mushroomds$`Shape` == "s"] <- "Convex"
+mushroomds$`Shape`[mushroomds$`Shape` == "x"] <- "Flat"
+
+levels(mushroomds$`Continent`) <- c(levels(mushroomds$`Continent`), c("Asia", "America","Australia","Europe"))
+mushroomds$`Continent`[mushroomds$`Continent` == "s"] <- "Asia"
+mushroomds$`Continent`[mushroomds$`Continent` == "y"] <- "America"
+mushroomds$`Continent`[mushroomds$`Continent` == "f"] <- "Australia"
+mushroomds$`Continent`[mushroomds$`Continent` == "g"] <- "Europe"
+
+levels(mushroomds$`Soiltype`) <- c(levels(mushroomds$`Soiltype`), c("Blacksoil", "Redsoil"))
+mushroomds$`Soiltype`[mushroomds$`Soiltype` == "t"] <- "Blacksoil"
+mushroomds$`Soiltype`[mushroomds$`Soiltype` == "f"] <- "Redsoil"
+
+head(mushroomds, 10)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
