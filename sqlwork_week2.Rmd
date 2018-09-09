@@ -1,0 +1,57 @@
+---
+title: "sqlconnecting_week2"
+author: "Vijaya Cherukuri"
+date: "September 9, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+# Load necessary packages
+library(DBI)
+library(RMySQL)
+
+# Establish DB connection
+mydb = dbConnect(MySQL(), user='root', password='lakshmi564', dbname ='cuny', host='localhost', port = 3306)
+
+# Test connection
+mydb
+
+# Query to fetch usertable data and assign to query1
+query1 <- dbGetQuery(conn = mydb, statement = "SELECT * from usertable")
+query1
+
+# Query to fetch movie_ratings data and assign to query2
+query2 <- dbGetQuery(conn = mydb, statement = "SELECT * from movie_ratings")
+query2
+
+# Query to join usertable and movie_rating and get the resultset
+query3 <- dbGetQuery(conn = mydb, statement = "select A.user_id, A.Firstname, A.Lastname, B.movie_id, B.movie_name, B.movie_rating
+ from usertable A, movie_ratings B where A.user_id = B.user_id ")
+query3
+
+# Query to use database functions and get average ratings for movies
+query4 <- dbGetQuery(conn = mydb, statement = "select movie_id, round(avg(movie_rating),2) from cuny.movie_ratings group by movie_id")
+query4
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
