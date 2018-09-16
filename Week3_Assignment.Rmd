@@ -1,0 +1,115 @@
+---
+title: "Week 3 Assignment"
+author: "Vijaya Cherukuri"
+date: "September 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(stringr)
+
+# 3. Copy the introductory example. The vector name stores the extracted names.
+#Actual data
+raw.data <- "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+
+#Extract Vecor name
+name <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+name
+
+#(a) Use the tools of this chapter to rearrange the vector so that all elements conform to the standard first_name last_name.
+#Vecor name from above expression
+name
+
+# Frist and Last names seperated by comma
+
+split_names <- str_split(name, ",")
+split_names
+
+#Creawting data frame
+split_names <- data.frame(split_names)
+split_names
+
+# Assigning Fist and Last names
+lastnm <- data.frame(split_names[1,])
+firstnm <- data.frame(split_names[2,])
+
+# Use rbind and get desired First name then Last name
+split_names <- ifelse(firstnm == lastnm, lastnm , rbind(firstnm, lastnm))
+split_names
+
+#(b) Construct a logical vector indicating whether a character has a title (i.e.,Rev. and Dr.).
+
+#Define Title
+title <- c("Rev.","Dr.")
+
+#Find title is part of name
+names_wtitle <- ifelse(str_detect(name,title) == TRUE, "YES", "NO")
+#Is title part of name
+names_wtitle <- data.frame (name=name, title=names_wtitle)
+names_wtitle
+
+#(c) Construct a logical vector indicating whether a character has a second name.
+#Identify if name has title
+middle_name <- ifelse(str_detect(name,"[A-Z]\\.") == TRUE, "YES", "NO")
+middle_name
+
+
+names_wmname <- data.frame (name, middle=middle_name)
+names_wmname
+
+# 4. Describe the types of strings that conform to the following regular expressions and construct an example that is matched by the regular expression.
+
+# (a) [0-9]+\$
+raw.vector <- c("This is my example where 1234567890$ is represented at the end of the vector; it will report [1234567890$] two times with a dollar sign at the end", "Another good example is 123$ but not $123")
+unlist(str_extract_all(raw.vector, "[0-9]+\\$"))
+
+# (b) \b[a-z]{1,4}\b
+raw.vector <- c("In this example it will display all the words that are surrounded by edges \\b on both sides and composed of four letters or less but with LOWER CASE only.")
+unlist(str_extract_all(raw.vector, "\\b[a-z]{1,4}\\b"))
+
+# (c) .*?\.txt$
+raw.vector <- c("In this example it will display all the sentences that are composed of a period . followed by a word that has the asterisk or star that could be optional and then followed by the extension.txt, for example:", "this is good my.homework.txt", "my.homew*rk.txt is a very good example not included because is not at the end of the sentence.", "but this one is great my.homew*rk.txt")
+unlist(str_extract_all(raw.vector, ".*?\\.txt$"))
+
+# (d) \d{2}/\d{2}/\d{4}
+raw.vector <- c("in this example we will extract 02/04/2016 and 08/09/1977","Also we will not be able to obtain 4/15/1879 since it doest nt match the two digit month, neither 02/19/17")
+unlist(str_extract_all(raw.vector, "\\d{2}/\\d{2}/\\d{4}"))
+
+# (e) <(.+?)>.+?</\1>
+raw.vector <- c("<!DOCTYPE html><html><body>Hello World</body></html></html>")
+unlist(str_extract_all(raw.vector, "<(.+?)>.+?</\\1>"))
+
+
+# 9. The following code hides a secret message. Crack it with R and regular expressions. Hint: Some of the characters are more revealing than others! The code snippet is also available in the materials at www.r-datacollection.com.
+# Raw vector
+raw.vector <- "clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0TanwoUwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigOd6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
+
+# Alphanumeric of lenght 1 with an optional period to eliminate uppercase and period issues
+hidden_message <- unlist(str_extract_all(raw.vector, "[[:upper:].?]{1,}"))
+hidden_message
+
+hidden_message <- str_replace_all(paste(hidden_message, collapse = ''), "[.]", " ")
+# Final output
+hidden_message
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
