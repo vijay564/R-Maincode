@@ -1,0 +1,107 @@
+---
+title: "607_Project1"
+author: "Vijaya Cherukuri"
+date: "September 23, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+#Chess tojurnament results - Project 1
+#Load library
+library(stringr)
+
+tournamentdata <- readLines('E:/MS/tournamentinfo.txt')
+# Got warning
+head(tournamentdata, 16)
+
+
+#Remove dashes
+removedashes <- str_replace_all(string = tournamentdata, pattern = "^-+$", "")
+head(removedashes)
+
+#Remove empty vector
+removeemptyv <- removedashes[sapply(removedashes, nchar) > 0]
+head(removeemptyv)
+
+# Seperate even and odd rows and create vectors
+Player_Name <- removeemptyv[seq(1, 130, 2)]
+PlayerName <- Player_Name[-c(1:1)]
+head(PlayerName) 
+
+
+Player_USCFID <- removeemptyv[seq(2, 130, 2)]
+PlayerUSCFID <- Player_USCFID[-c(1:1)]
+head(PlayerUSCFID)
+
+# Combine the data to make single row
+Combineddata <- mapply(paste, sep = "", PlayerName, PlayerUSCFID)
+head(Combineddata)
+
+#Extract relevant information
+ID <- str_extract(string = Combineddata, pattern = "[0-9]{8}")
+ID
+
+#playerID
+PlayerID <- str_extract(string = Combineddata, pattern = "[\\s{3}]\\d{1,2}[\\s\\|]")
+PlayerID <- str_trim(PlayerID)
+PlayerID
+
+#PlayerNmae
+First_Last <- str_extract(string = Combineddata, pattern = "\\s([[:alpha:] ]{5,})\\b\\s")
+First_Last <- str_trim(First_Last)
+First_Last
+
+#Player_State
+State <- str_extract(string = PlayerUSCFID, pattern = "[[:alpha:]]{2}")
+State
+
+# Total number of points
+NumPoints <- str_extract(string = Combineddata, pattern = "[0-9]\\.[0-9]")
+NumPoints
+
+#Prerating
+PreRating <- str_extract(string = Combineddata, pattern = "\\s\\d{3,4}[^\\d]")
+PreRating
+
+#Remove P's at end
+PreRating <- as.integer(str_extract(PreRating, "\\d+"))
+PreRating
+
+#Average ratings
+Opponents <- str_extract_all(string = Combineddata, pattern = "\\d{1,2}\\|")
+#Remove "|"
+Opponents <- str_extract_all(string = Opponents, pattern = "\\d{1,2}")
+head(Opponents)
+
+#Create data frame
+ChessResults <- data.frame(First_Last, State, NumPoints, PreRating)
+head(ChessResults, 5)
+
+#Change column names
+colnames(ChessResults) <- c("Player's Name", "Player's State", "Total Number of Points", "Player's Pre-Rating")
+head(ChessResults,5)
+
+#Write to CSV
+write.csv(ChessResults, file = "ChessResults.csv")
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
