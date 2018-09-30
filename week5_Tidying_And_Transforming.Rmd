@@ -1,0 +1,90 @@
+---
+title: "Week 5 Tidying and Transforming"
+author: "Vijaya Cherukuri"
+date: "September 30, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+## Read the information from your .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data.
+## Used three main functions for tidying data: gather(), separate() and spread()
+
+# Read CSV file 
+
+library(tidyr)
+
+flightData<-read.csv("https://raw.githubusercontent.com/vijay564/R-Maincode/master/week5.csv", header= TRUE,sep=",",na.strings = "?",stringsAsFactors=FALSE)
+flightData
+
+# Eliminate Blank Row
+flightData <- flightData[c(1,2,4,5), ]
+flightData
+
+# Rename missing Headers 
+names(flightData)[names(flightData) == "X"] <- "Airline"
+names(flightData)[names(flightData) == "X.1"] <- "Arrival"
+
+# Repeating missing Airline name
+flightData[2, 1] <- "ALASKA"
+flightData[4, 1] <- "AM West"
+flightData
+
+# Use gather() function to takes multiple columns and gathers them into key-value pairs. It makes “wide” data longer.
+tidy <- gather(flightData, "City", "Count", 3:7) 
+head(tidy)
+
+# Use gather() function to takes multiple columns, and gathers them into key-value pairs. It makes “long” data wider
+tidy <- spread(tidy, "Arrival", Count)
+tidy
+
+# Using select function which focus on subset of variables or we can use minus to hide it
+suppressMessages(library(dplyr))
+head(select(tidy, Airline))
+
+head(select(tidy, -Airline))
+
+# Use filter function
+filter(tidy,Delayed==62)
+
+# Use Mutate function to add new columns 
+tidy=mutate(tidy,Total = Delayed + `On Time`)
+head(tidy)
+
+## Compare arrival delays for airlines
+# AM West is getting delayed most of the times
+library(ggplot2)
+
+
+tidy <- mutate(tidy, Total = Delayed + `On Time`, PercentDelayed = Delayed / Total * 100)
+tidy <- arrange(tidy, City, PercentDelayed)
+
+ggplot(tidy,aes(x=City,y=PercentDelayed,fill=factor(Airline)))+
+    geom_bar(stat="identity",position="dodge")
+
+tidy
+
+# Use Summarise function which reduce each group to a smaller number of summary statistics
+# On High Level the Overall delay of Alaska airline is delayed by 11% and AM West delayed by 18%
+delays <- tidy %>% group_by(Airline) %>% summarise(MeanPercent = round(mean(PercentDelayed), 0))
+delays
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
