@@ -1,0 +1,120 @@
+---
+title: "Project 2"
+author: "Vijaya Cherukuri"
+date: "October 7, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+#Here i am using 3 datasets that are most commonly discussed in the group. Based on the insights and comments i am taking some datasets related to Education, Global warming and Oil consumption.
+
+#1) In education, Graduation rate is a predictor for jobs. I am taking this dataset as this was the Discussion topic that i used in Week2 discussion form. This is the link where i got the content and used table as a dataset : https://www.theanalysisfactor.com/wide-and-long-data/
+#2) Global warming, Tempareatures are increasing and causing a lot of impact on global warming. Even though we are taking many precautionary steps still temerature is impacting global warming. I collected data from NOAA sites http://w2.weather.gov/climate/, https://data.noaa.gov/dataset/ 
+#3) Oil consumtion, For credue oil we are getting engine oil and gear oil. We are planning to analyse which oil type is mostly consumed.
+
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(RCurl)
+
+## Dataset 1 :
+# Education dataset : Created a CSV file from the above metioned site and placed in Github. Here we will identify the predictor of Jobs with respect to Graduation rate.
+# Githib link : 
+
+# Create a csv and load the data. Change the format from wide to long
+
+dataset1_url <- getURL("https://raw.githubusercontent.com/vijay564/R-Maincode/master/Education.csv")
+
+# Create csv table.
+table1 <- read.csv(text = dataset1_url)
+
+#Use tbl_df from dplyr
+tbl_df(table1)
+
+# View the structure
+str(table1)
+
+# Formatting data to long. We will data into 2 table. One for Colleges and other for Jobs. We will join them by county.
+# split into 2 tables
+table1_colleges <- select(table1, 1:7)
+table1_jobs <- select(table1, 1, 8:11)
+
+# Rename collumn for years as year
+names(table1_colleges) <- c("County", "LandArea", "NatAmenity", "1970", "1980", "1990", "2000")
+names(table1_jobs) <- c("County", "1970", "1980", "1990", "2000")
+
+# Transform each table from wide to long format using the gather function from tidyr and store resulting table so that we can join them
+# Change format to long using Gather function from tidyr and store in table 
+table1_colleges_long <- gather(table1_colleges, years, college_graduation, 4:7)
+table1_jobs_long <- gather(table1_jobs, years, jobs, 2:5)
+
+# Use inner_join from dplyr package and join on county, year
+table1_result <- inner_join(table1_colleges_long, table1_jobs_long, by = c("County", "years"))
+
+# Conclusive prediction of college graduation as a predictor of number of jobs
+ggplot(table1_result, aes(x=college_graduation, y=jobs, colour = County)) + geom_line() +geom_point()
+
+## Dataset 2 :
+# Global Warming Temperature data, Here we will try to finout the differences in temperature.Read CSV file from Github.
+
+temperaturedata <- read.csv("https://raw.githubusercontent.com/Godbero/CUNY-MSDA-IS607/master/noaa.csv", header = TRUE, sep = ",", comment.char = "#", stringsAsFactors = FALSE)
+tbl_df(temperaturedata)
+
+# Tidying, we see period 60 is september 2010 to August 2015.Period 48 is September 2011 to August 2015; period 36 is September 2012 to August 2015; period 24 is September 2013 to August 2015; and period 12 is September 2014 to August 2015. 
+# I choose Value (temp in F), Mean, Departure (difference) and High.Rank
+
+tidy.temperature <- subset(temperaturedata, Period >= 12, select = c(Period, Value, Twentieth.Century.Mean, Departure, High.Rank))
+colnames(tidy.temperature) <- c("Period", "Temp", "Mean", "Diff", "Rank")
+tidy.temperature <- tidy.temperature[-2, ]     # to get rid of row 18
+tidy.temperature
+
+# Analyse Temperature, If we sort by Temperature we see that 1 year was the hottest, followed by 4 and 5. It is good that the temperatures are in sync with the difference from the mean. It is almost a test that the data makes some sense and we see it correctly.
+arrange(tidy.temperature, Temp)
+
+## Dataset 3 :
+# Oil Consumption, Here we are trying to find out the most consumed brand across the 2 category of oil.
+# Read CSV file from Github
+oil_url <- getURL("https://raw.githubusercontent.com/vijay564/R-Maincode/master/OilConsumption.csv")
+table3 <- read.csv(text = oil_url)
+
+# Use tbl_df function in dplyr package
+tbl_df(table3)
+# View structure
+tbl_df(table3)
+
+# First we will split the table for purchased and consumed value, repeating the common column of Month and Category. Then, we will rename the columns and remove the first line of table. Then we will fill in the "month" column using fill() function from tidyr package.
+# split the table into 2
+table3_purchased <- select(table3, 1:3, 5, 7)
+table3_consumed <- select(table3, 1:2, 4, 6, 8)
+
+# Rename column for years as year
+names(table3_purchased) <- c("Month", "Category", "Caltex", "Gulf", "Mobil")
+names(table3_consumed) <- c("Month", "Category", "Caltex", "Gulf", "Mobil")
+
+# remove first row 
+table3_purchased <- table3_purchased[-c(1), ] 
+table3_consumed <- table3_consumed[-c(1), ] 
+
+# The conclusion is we want how 2 categories of Oil are consumed for Mobil. We are plotting a grapth that specified how they are consumed
+ggplot(table3_consumed,aes(x=Month,y=Mobil,fill=factor(Category)))+    geom_bar(stat="identity",position="dodge")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
