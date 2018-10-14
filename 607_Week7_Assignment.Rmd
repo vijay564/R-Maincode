@@ -1,0 +1,95 @@
+---
+title: "607_Week7_Assignment"
+author: "Vijaya Cherukuri"
+date: "October 14, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown Week 7 Assignment
+
+Week 7 Assignment
+
+Pick three of your favorite books on one of your favorite subjects.   At least one of the books should have more than one author.  For each book, include the title, authors, and two or three other attributes that you find interesting.
+
+Take the information that you've selected about these three books, and separately create three files which store the book's information in HTML (using an html table),  XML, and JSON formats (e.g.  "books.html", "books.xml", and "books.json").
+To help you better understand the different file structures, I'd prefer that you create each of these files "by hand" unless you're already very comfortable with the file formats.
+
+Write R code, using your packages of choice, to load the information from each of the three sources into separate R data frames.   Are the three data frames identical?
+
+```{r}
+#Load required Libraries
+library(XML)
+library(R2HTML)
+library(jsonlite)
+library(RCurl)
+library(rvest)
+library(DT)
+```
+
+# 3 sources of data HTML, XML and JSON are available in Github.
+
+# Read HTML file from Git Hub which contains 4 records for the books information. Create dataframe and datatable to compare
+
+```{r}
+#Read HTML file from Git Hub URl : https://raw.githubusercontent.com/vijay564/R-Maincode/master/books.html
+books.html <- read_html("https://raw.githubusercontent.com/vijay564/R-Maincode/master/books.html", encoding = "UTF-8")
+books.tables <- html_nodes(books.html, "table")
+books.html <- html_table(books.tables, header = TRUE)
+books.html
+#leaning the data
+html_table_clean <- books.html[[1]]
+html.df <- as.data.frame(html_table_clean)
+#Create Datatable
+datatable(html.df)
+```
+
+# Read XML file from Git Hub which contains 4 records for the books information. Create dataframe and datatable to compare
+
+```{r}
+#Read XML for Git Hib URl : https://raw.githubusercontent.com/vijay564/R-Maincode/master/books.xml
+books.url = getURL("https://raw.githubusercontent.com/vijay564/R-Maincode/master/books.xml")
+books.parse <- xmlParse(books.url)
+# Parsing
+books.root <- xmlRoot(books.parse)
+books.xml <- xmlToDataFrame(books.root, stringsAsFactors = FALSE)
+# Creating datatable
+datatable(books.xml)
+```
+
+# Read JSON file from Git Hub which contains 4 records for the books information. Create dataframe and datatable to compare
+
+```{r}
+#Read JSON file from Git Hub URl : https://raw.githubusercontent.com/vijay564/R-Maincode/master/books.json
+json.url <- getURL("https://raw.githubusercontent.com/vijay564/R-Maincode/master/books.json")
+json.books <- fromJSON(json.url)
+json.books
+json.books.df <- data.frame(json.books$`data_books`)
+#Create Datatable
+datatable(json.books.df)
+```
+
+# Compare if the 3 dataframes created from HTML, XML and JSON are identical
+
+```{r}
+# Check if the dataframes are identical or not
+identical(html.df, books.xml)
+identical(html.df, json.books.df)
+identical(books.xml, json.books.df)
+```
+
+#Conclusion :
+## After comparing HTMl, XML and JSON dataframes, we found they are similar but not identical eventhough the datatable content remains same across all the 3 files.
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
