@@ -1,0 +1,35 @@
+<?xml version ="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE data_books [
+<!ELEMENT data_books (book)>
+<!ELEMENT book (title, author+, ISBN, publishing_year)>
+<!ELEMENT title (#PCDATA)>
+<!ELEMENT author (#PCDATA)>
+<!ELEMENT ISBN (#PCDATA)>
+<!ELEMENT publishing_year (#PCDATA)>
+]>
+<data_books>
+  <book id="1">
+    <title>Advanced R</title>
+    <author>Hadley Wickham</author>
+    <ISBN>978-1466586963</ISBN>
+    <publishing_year>2015</publishing_year>
+  </book>
+  <book id="2">
+    <title>Data Science from scratch: First Principals with Python</title>
+    <author>Joel Grus</author>
+    <ISBN>978-1491901427</ISBN>
+    <publishing_year>2015</publishing_year>
+  </book>
+  <book id="3">
+    <title>R for Data Science: Import, Tidy, Transform, Visualize, and Model Data</title>
+    <author>Hadley Wickham, Garrett Grolemund</author>
+    <ISBN>978-1491910399</ISBN>
+    <publishing_year>2016</publishing_year>
+  </book>
+  <book id="4">
+    <title>R Graphics Cookbook</title>
+    <author>Winston Chang</author>
+    <ISBN>978-1449316952</ISBN>
+    <publishing_year>2013</publishing_year>
+  </book>
+</data_books>

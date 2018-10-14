@@ -67,7 +67,7 @@ ggplot(table1_result, aes(x=college_graduation, y=jobs, colour = County)) + geom
 ## Dataset 2 :
 # Global Warming Temperature data, Here we will try to finout the differences in temperature.Read CSV file from Github.
 
-temperaturedata <- read.csv("https://raw.githubusercontent.com/Godbero/CUNY-MSDA-IS607/master/noaa.csv", header = TRUE, sep = ",", comment.char = "#", stringsAsFactors = FALSE)
+temperaturedata <- read.csv("https://raw.githubusercontent.com/vijay564/R-Maincode/master/noaa_temperature.csv", header = TRUE, stringsAsFactors = FALSE)
 tbl_df(temperaturedata)
 
 # Tidying, we see period 60 is september 2010 to August 2015.Period 48 is September 2011 to August 2015; period 36 is September 2012 to August 2015; period 24 is September 2013 to August 2015; and period 12 is September 2014 to August 2015. 

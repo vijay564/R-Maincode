@@ -1,0 +1,26 @@
+{"data_books" :[
+    {
+    "title" : "Advanced R", 
+    "authors" : ["Hadley Wickham"], 
+    "ISBN" : "978-1466586963", 
+    "publishing_year" : 2015 
+    },
+    {
+    "title" : "Data Science from scratch: First Principals with Python", 
+    "authors" : "Joel Grus", 
+    "ISBN" : "978-1491901427", 
+    "publishing_year" : 2015
+    }, 
+    {
+    "title" : "R for Data Science: Import, Tidy, Transform, Visualize, and Model Data", 
+    "authors" : "Hadley Wickham, Garrett Grolemund", 
+    "ISBN" : "978-1491910399", 
+    "publishing_year" : 2016
+    },
+    {
+    "title" : "R Graphics Cookbook", 
+    "authors" : "Winston Chang", 
+    "ISBN" : "978-1-449-31695-2", 
+    "publishing_year" : 2013
+    }]
+}

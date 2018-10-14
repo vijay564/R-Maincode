@@ -216,7 +216,7 @@ ggplot(table1_result, aes(x=college_graduation, y=jobs, colour = County)) + geom
 <pre class="r"><code>## Dataset 2 :
 # Global Warming Temperature data, Here we will try to finout the differences in temperature.Read CSV file from Github.
 
-temperaturedata &lt;- read.csv(&quot;https://raw.githubusercontent.com/Godbero/CUNY-MSDA-IS607/master/noaa.csv&quot;, header = TRUE, sep = &quot;,&quot;, comment.char = &quot;#&quot;, stringsAsFactors = FALSE)
+temperaturedata &lt;- read.csv(&quot;https://raw.githubusercontent.com/vijay564/R-Maincode/master/noaa_temperature.csv&quot;, header = TRUE, stringsAsFactors = FALSE)
 tbl_df(temperaturedata)</code></pre>
 <pre><code>## # A tibble: 17 x 12
 ##    Period Value Twentieth.Centu~ Departure Low.Rank High.Rank Record.Low
