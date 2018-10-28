@@ -1,0 +1,82 @@
+---
+title: "607-Week 9 Assignment Web API's"
+author: "Vijaya Cherukuri"
+date: "October 28, 2018"
+output: html_document
+---
+
+# Assignment
+> The New York Times web site provides a rich set of APIs, as described here: http://developer.nytimes.com/docs
+You'll need to start by signing up for an API key.
+Your task is to choose one of the New York Times APIs, construct an interface in R to read in the JSON data, and transform it to an R dataframe.
+
+# Solution
+
+## Libraries 
+
+```{r}
+library(jsonlite)
+library(DT)
+library(tidyr)
+library(dplyr)
+```
+
+## Get API Key from New York Times website
+```{r}
+key <- "&api-key=866c0b4f1a5c4bb4a978ed35735f4ccd"
+```
+
+## We took books of best sellers where age range is filter as 10
+```{r}
+url <- "https://api.nytimes.com/svc/books/v3/lists/best-sellers/history.json?age-group=10"
+```
+
+## Use jsonlite function to get API data with API key and query for kids books
+
+```{r}
+maindata <- fromJSON(paste0(url, key))
+```
+
+## Verify the data and tidy
+
+```{r}
+head(maindata)
+
+# Verify Class, length and Names
+class(maindata) 
+
+length(maindata)
+
+names(maindata)
+
+# Check number of elements in Lists
+lapply(maindata, class)
+
+lapply(maindata, length)
+```
+
+## Tidy data and create dataframe
+
+```{r cars}
+#Remove first three lists
+results <- maindata[-c(1:3)]
+names(results)
+
+length(results)
+class(results)
+
+results_df <- results[["results"]]
+
+class(results_df)
+
+colnames(results_df)
+
+Books <- tbl_df(results_df)
+Books <- select(Books, one_of(c("title", "description", "author", "price", "age_group", "publisher")))
+Books <- rename(Books, Title = 'title', Description = 'description', Author = 'author', Price = 'price', Ages = 'age_group', Publisher = 'publisher')
+Books
+
+datatable(Books)
+```
+
+
