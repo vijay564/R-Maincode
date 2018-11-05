@@ -1,0 +1,139 @@
+---
+title: "Project 4"
+author: "Vijaya Cherukuri"
+date: "November 4, 2018"
+output: html_document
+---
+
+
+# Assignment - Project 4
+> For this project we have to start with a spam/ham dataset, then predict the class of new documents 
+(either withheld from the training dataset or from another source such as your own spam folder)
+One example corpus: http://spamassassin.apache.org/old/publiccorpus/ 
+Here we classify emails as Spam(Unwanted) and Ham (Wanted)
+
+# Solution
+We download Spam and ham emails from http://spamassassin.apache.org/old/publiccorpus/. These are the files 20050311_spam_2.tar.bz2 and 20030228_easy_ham.tar.bz2
+
+## Libraries 
+
+```{r}
+library("tm")
+library("RTextTools")
+library("tidyverse")
+library("stringr")
+library("SnowballC")
+library("wordcloud")
+```
+
+## unzip in following local directories and create corpus for the underlying files
+```{r}
+spam_dir <- 'E:\\github\\Rtesting\\pr4\\spam_2\\'
+ham_dir <- 'E:\\github\\Rtesting\\pr4\\easy_ham\\'
+spam <- spam_dir %>% DirSource() %>% VCorpus()
+ham <- ham_dir %>% DirSource() %>% VCorpus()
+meta(spam[[1]])
+meta(ham[[1]])
+```
+
+## Tidy Corpus. Truncate words using stem. Use loop to place meta data label on all documents as ham or spam
+```{r}
+spam <- spam %>% tm_map(content_transformer(PlainTextDocument))
+spam <- spam %>% tm_map(content_transformer(removePunctuation))
+spam <- spam %>% tm_map(content_transformer(tolower))
+spam <- spam %>% tm_map(content_transformer(removeNumbers))
+spam <- spam %>% tm_map(content_transformer(stemDocument),  language = 'english')
+# Remove 'receiv' for better accuracy
+spam <- spam %>% tm_map(removeWords, c('receiv', stopwords('english')))
+
+ham <- ham %>% tm_map(content_transformer(PlainTextDocument))
+ham <- ham %>% tm_map(content_transformer(removePunctuation))
+ham <- ham %>% tm_map(content_transformer(tolower))
+ham <- ham %>% tm_map(content_transformer(removeNumbers))
+ham <- ham %>% tm_map(content_transformer(stemDocument),  language = 'english')
+# Remove 'receiv', 'spamassassin' for better accuracy
+ham <- ham %>% tm_map(removeWords, c('receiv', 'spamassassin', stopwords('english')))
+
+ham_spam <- c(ham,spam)  #c() function puts the two Corpuses back to Back
+
+for(i in 1:length(ham)){
+  meta(ham_spam[[i]],"classification") <- "Ham"
+}
+for(i in (length(ham)+1):(length(spam)+length(ham))){
+  meta(ham_spam[[i]],"classification") <- "Spam"
+}
+for(i in 1:5){
+  ham_spam <- sample(ham_spam)
+} # This scramble the corpus so it is not all Ham then all Spam
+meta(ham_spam[[127]])
+```
+
+## Applying Statistical methods to text documents
+
+```{r}
+spam_dtm <- spam %>% DocumentTermMatrix()
+spam_dtm <- spam_dtm %>% removeSparseTerms(1-(10/length(spam)))
+spam_dtm
+
+ham_dtm <- ham %>% DocumentTermMatrix()
+ham_dtm <- ham_dtm %>% removeSparseTerms(1-(10/length(ham)))
+ham_dtm
+
+ham_spam_dtm <- ham_spam %>% DocumentTermMatrix()
+ham_spam_dtm <- ham_spam_dtm %>% removeSparseTerms(1-(10/length(ham_spam)))
+ham_spam_dtm
+```
+
+## Analyse
+
+```{r}
+#For Spam
+spam_freq <-  spam_dtm %>% as.matrix() %>% colSums()
+length(spam_freq) 
+spam_freq_ord <- spam_freq %>% order(decreasing = TRUE)
+par(las=1)
+barplot(spam_freq[spam_freq_ord[1:10]], horiz = TRUE)
+
+#For Ham
+ham_freq <-  ham_dtm %>% as.matrix() %>% colSums()
+length(ham_freq) #Should be the same as term count, not document count.
+ham_freq_ord <- ham_freq %>% order(decreasing = TRUE)
+par(las=1)
+barplot(ham_freq[ham_freq_ord[1:10]], horiz = TRUE)
+
+```
+
+## Document Analysis - Create container and use sets to findout accuracy
+
+```{r}
+# Used below code from R text book
+lbls <- as.vector(unlist(meta(ham_spam, type="local", tag = "classification")))
+head(lbls)
+N <- length(lbls)
+container <- create_container(ham_spam_dtm, labels = lbls, trainSize = 1:501,testSize = 502:N,virgin = TRUE)
+```
+
+## Model - Support Vector Machine
+> Use Support Vector Machine to supervise learning model to classify emails in the test set as ham or spam.
+
+```{r}
+svm_model <- train_model(container, "SVM")
+svm_result <- classify_model(container,svm_model)
+head(svm_result)
+prop.table(table(svm_result[,1] == lbls[502:N]))
+```
+> This gave 98% accuracy
+
+## Model - Random Forest
+> Use Random Forest technique by creating multiply decision trees using the training set.
+
+```{r}
+tree_model <- train_model(container, "TREE")
+tree_result <- classify_model(container, tree_model)
+head(tree_result)
+prop.table(table(tree_result[,1] == lbls[502:N]))
+```
+> This gave 97% accuracy
+
+## Final Summary
+> When compared to models Support Vector Machine and Random Forest, we got 98% accuracy for SVm and 97% for Random Forest.
