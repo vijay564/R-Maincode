@@ -176,7 +176,7 @@ spam &lt;- spam_dir %&gt;% DirSource() %&gt;% VCorpus()
 ham &lt;- ham_dir %&gt;% DirSource() %&gt;% VCorpus()
 meta(spam[[1]])</code></pre>
 <pre><code>##   author       : character(0)
-##   datetimestamp: 2018-11-05 03:47:31
+##   datetimestamp: 2018-11-05 03:52:55
 ##   description  : character(0)
 ##   heading      : character(0)
 ##   id           : 00001.317e78fa8ee2f54cd4890fdc09ba8176
@@ -184,7 +184,7 @@ meta(spam[[1]])</code></pre>
 ##   origin       : character(0)</code></pre>
 <pre class="r"><code>meta(ham[[1]])</code></pre>
 <pre><code>##   author       : character(0)
-##   datetimestamp: 2018-11-05 03:47:33
+##   datetimestamp: 2018-11-05 03:52:57
 ##   description  : character(0)
 ##   heading      : character(0)
 ##   id           : 00001.7c53336b37003a9286aba55d2945844c
@@ -222,10 +222,10 @@ for(i in 1:5){
 } # This scramble the corpus so it is not all Ham then all Spam
 meta(ham_spam[[127]])</code></pre>
 <pre><code>##   author        : character(0)
-##   datetimestamp : 2018-11-05 03:47:33
+##   datetimestamp : 2018-11-05 03:52:57
 ##   description   : character(0)
 ##   heading       : character(0)
-##   id            : 01649.5bcdd9205f59d95e025a2896a38ee2bb
+##   id            : 01746.06fb7b96d18dae121abb94e8a7624f4b
 ##   language      : en
 ##   origin        : character(0)
 ##   classification: Ham</code></pre>
@@ -281,7 +281,7 @@ barplot(ham_freq[ham_freq_ord[1:10]], horiz = TRUE)</code></pre>
 <pre class="r"><code># Used below code from R text book
 lbls &lt;- as.vector(unlist(meta(ham_spam, type=&quot;local&quot;, tag = &quot;classification&quot;)))
 head(lbls)</code></pre>
-<pre><code>## [1] &quot;Ham&quot;  &quot;Ham&quot;  &quot;Spam&quot; &quot;Ham&quot;  &quot;Spam&quot; &quot;Ham&quot;</code></pre>
+<pre><code>## [1] &quot;Ham&quot;  &quot;Ham&quot;  &quot;Spam&quot; &quot;Spam&quot; &quot;Ham&quot;  &quot;Ham&quot;</code></pre>
 <pre class="r"><code>N &lt;- length(lbls)
 container &lt;- create_container(ham_spam_dtm, labels = lbls, trainSize = 1:501,testSize = 502:N,virgin = TRUE)</code></pre>
 </div>
@@ -294,18 +294,18 @@ container &lt;- create_container(ham_spam_dtm, labels = lbls, trainSize = 1:501,
 svm_result &lt;- classify_model(container,svm_model)
 head(svm_result)</code></pre>
 <pre><code>##   SVM_LABEL  SVM_PROB
-## 1      Spam 0.9988683
-## 2      Spam 0.9952747
-## 3      Spam 0.9999704
-## 4      Spam 0.9999435
-## 5       Ham 0.9978157
-## 6       Ham 0.9352400</code></pre>
+## 1       Ham 0.9543802
+## 2       Ham 0.9869500
+## 3       Ham 0.9997587
+## 4       Ham 0.9854293
+## 5       Ham 0.9879737
+## 6      Spam 0.9984496</code></pre>
 <pre class="r"><code>prop.table(table(svm_result[,1] == lbls[502:N]))</code></pre>
 <pre><code>## 
-##     FALSE      TRUE 
-## 0.0117751 0.9882249</code></pre>
+##      FALSE       TRUE 
+## 0.01118634 0.98881366</code></pre>
 <blockquote>
-<p>This gave 99% accuracy</p>
+<p>This gave 98% accuracy</p>
 </blockquote>
 </div>
 <div id="model---random-forest" class="section level2">
@@ -317,24 +317,24 @@ head(svm_result)</code></pre>
 tree_result &lt;- classify_model(container, tree_model)
 head(tree_result)</code></pre>
 <pre><code>##   TREE_LABEL TREE_PROB
-## 1       Spam 1.0000000
-## 2       Spam 0.8333333
-## 3       Spam 1.0000000
-## 4       Spam 1.0000000
-## 5        Ham 1.0000000
-## 6        Ham 1.0000000</code></pre>
+## 1       Spam     0.625
+## 2        Ham     1.000
+## 3        Ham     1.000
+## 4        Ham     1.000
+## 5        Ham     1.000
+## 6       Spam     1.000</code></pre>
 <pre class="r"><code>prop.table(table(tree_result[,1] == lbls[502:N]))</code></pre>
 <pre><code>## 
 ##      FALSE       TRUE 
-## 0.02178393 0.97821607</code></pre>
+## 0.02090079 0.97909921</code></pre>
 <blockquote>
-<p>This gave 96% accuracy</p>
+<p>This gave 97% accuracy</p>
 </blockquote>
 </div>
 <div id="final-summary" class="section level2">
 <h2>Final Summary</h2>
 <blockquote>
-<p>When compared to models Support Vector Machine and Random Forest, we got 99% accuracy for SVm and 96% for Random Forest.</p>
+<p>When compared to models Support Vector Machine and Random Forest, we got 98% accuracy for SVm and 97% for Random Forest.</p>
 </blockquote>
 </div>
 </div>
