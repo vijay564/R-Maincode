@@ -1,0 +1,30 @@
+---
+title: "607_Discussion-11"
+author: "Vijaya Cherukuri"
+date: "November 7, 2018"
+output: html_document
+---
+
+# Tasks for this discussion
+> - Identify a recommender system web site
+ - Perform a Scenario Design analysis.
+ - Attempt to reverse engineer what you can about the site, from the site interface and any available information that you can find on the Internet or elsewhere.
+ - Include specific recommendations about how to improve the site's recommendation capabilities going forward.
+ 
+# Recommender System
+> The Recommender System website that I chose is the "www.coursera.org"
+
+# Target Users
+> The target users are all the customers who like to take courses online.
+ 
+# What are their Key Goals
+> This will help customers to find the most relevant course based on the history of searching and key words used while searching.
+
+# How can the application help them accomplish their goals?
+> Many users already took the courses provided their rating and feedback. Based on this customer can select appropriate one.
+ 
+# Reverse Engineering Site
+> Reverse engineering is bit complex on coursera but still they can do reverse engineering on what the actual users who took the course.
+
+# Specific Recommendations to Improve Site's Recommendation Capabilities moving Forward
+> One of the recommendation is to include ratings based on who actually took the course and others who recommended the course.
