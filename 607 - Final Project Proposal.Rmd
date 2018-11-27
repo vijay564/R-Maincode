@@ -1,0 +1,33 @@
+---
+title: "DATA607_Final Project Proposal"
+author: "Juanelle Marks,Vijaya Cherukuri, Guang Qiu, Calvin Wong"
+date: "11/11/2018"
+output:
+  prettydoc::html_pretty:
+    highlight: github
+    theme: cayman
+---
+
+#**Project Title-Real Estate Data Analysis**
+
+##**Group Members:**
+1. Calvin Wong
+
+2. Vijaya Cherukuri
+
+3. Guang Qiu
+
+4. Juanelle Marks
+
+##**Project Context**
+
+>Real estate is one of the most important sectors in the economy. It is often the largest source of wealth and savings for many families. The affordability of real estate along with changes in property prices have a direct impact on the wealth of the general population. One of the fundamental activities in the determination of housing market  is performing a comparative market analysis. This is where prices of similar properties in an area undergo price examination. Since no two properties are identical, sellers make price adjustments for properties-based categorical differences to determine fair market value.
+
+
+##**Proposed Data Source**
+
+>Our research will reference the  Zillow's 'Zestimate' home valuation tool which was released 12 years ago. Zestimate is a tool which estimates home values based on statistical and machine learning models that analyze hundreds of data points on each property. This tool has become one of the largest and most trusted tool for real estate pricing information in the U.S. We plan to  obtain and use datasets from a Kaggle competition, in which participants were asked to improve algorithms which drive Zestimate ( datasets are available at: https://www.kaggle.com/c/zillow-prize-1/data). 
+
+
+##**Proposed over-arching  project goals**
+>Our research seeks to provide a better understanding of the relationsip between certain characteristics of  housing and actual home prices. We seek to answer the question, "To what extent does factors such as home features, property comparatives, geographical inequality and external economic forces, influence home prices?" By developing our own analysis of the housing market and by performing comparatives of our work and  that of other competed teams, we also hope to be able to determine how cohesive our analysis is and if we can offer improvements to current Zestimate algorithms.
