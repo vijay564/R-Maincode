@@ -1,0 +1,1120 @@
+---
+title: "DATA607 FinalProject"
+author: "Guang Qiu, Vijaya Cherukuri, Calvin Wong, Juanelle Marks"
+output: 
+html_document:
+    toc: true
+    toc_float: true
+    smooth_scroll: true
+    theme: cosmo
+    highlight: pygments
+---
+
+#**Project Title - Analysis of Real Estate Data**
+
+##**Group Members:**
+1. Calvin Wong
+
+2. Vijaya Cherukuri
+
+3. Guang Qiu
+
+4. Juanelle Marks
+
+##**Introduction**
+>Real estate is one of the most important sectors in the economy. It is often the largest source of wealth and savings for many families. The affordability of real estate along with changes in property prices have a direct impact on the wealth of the general population. One of the fundamental activities in the determination of housing market  is performing a comparative market analysis. This is where prices of similar properties in an area undergo price examination. Since no two properties are identical, sellers make price adjustments for properties-based categorical differences to determine fair market value.
+
+##**Over-arching  Project Goals**
+>This project seeks to provide a better understanding of the relationsip between certain characteristics of  housing and actual home prices.  By developing our own analysis of the housing market  we  hope to be able to determine how cohesive our analysis is and if we can offer improvements to current Zestimate algorithms.
+
+##**Data Source**
+>Our research will reference the  Zillow’s 'Zestimate' home valuation tool which was released 12 years ago. Zestimate is a tool which estimates home values based on statistical and machine learning models that analyze hundreds of data points on each property. This tool has become one of the largest and most trusted tool for real estate pricing information in the U.S. We plan to  obtain and use datasets from a Kaggle competition, in which participants were asked to improve algorithms which drive Zestimate ( datasets are available at: https://www.kaggle.com/c/zillow-prize-1/data). 
+
+##**Load Libraries**
+```{r}
+#install.packages('psych')
+#install.packages('leaflet')
+#install.packages('ggmap')
+library(tidyverse)
+library(psych)
+library(dplyr)
+library(shiny)
+library(leaflet)
+library(ggmap)
+library(data.table)
+library(ggplot2)
+library(scales)
+library(magrittr)
+library(bit64)
+library(lubridate)
+library(corrplot)
+library(h2o)
+library(lime)
+library(lubridate)
+library(magrittr)
+library(data.table)
+library(bit64)
+library(tidyverse)
+library(lubridate)
+library(mice)
+library(corrplot)
+```
+
+```{r setup, cache = F}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+## Read csv file into r 
+
+
+
+```{r}
+#Download the dataset from Kaggle link (https://www.kaggle.com/c/zillow-prize-1/data) with the name Properties_2016.csv and download to local drive and read this file.
+#Note : Due to size limitations in GitHub we are using the dataset which was downloaded to local drive
+
+##properties <-  read.csv(file="/Users/juanelle/Desktop/MSDS/Data607/final project/Project ##Proposal/FinalProject_House.csv",row.names = NULL)
+
+properties <-  read.csv(file="/Users/cwong79/Desktop/FinalProject_House_properties.csv", row.names = NULL)
+```
+
+
+```{r}
+download.file("https://www.dropbox.com/s/ne9l87yrzykr85v/Final_house.db?raw=1", 
+              "FinalProject_House.sqlite" )
+```
+
+
+### Read data from sqlite db
+
+
+```{r}
+#load library
+#install.packages('RSQLite')
+library(RSQLite)
+sqlite <- dbDriver("SQLite")
+conn <- dbConnect(sqlite,"FinalProject_House.sqlite")
+# Show all tables avaialbe in the sqllite
+alltables = dbListTables(conn)
+alltables
+
+```
+
+
+```{r}
+str(properties)
+```
+
+#**Data Transformation**
+
+##Explore dataset
+
+###**Missing Data**
+There are two types of missing data:
+MCAR: missing completely at random. This is the desirable scenario in case of missing data. MNAR: missing not at random. Missing not at random data is a more serious issue and in this case it might be wise to check the data gathering process further and try to understand why the information is missing. For instance, if most of the people in a survey did not answer a certain question, why did they do that? Was the question unclear? Assuming data is MCAR, too much missing data can be a problem too. Usually a safe maximum threshold is 5% of the total for large datasets. If missing data for a certain feature or sample is more than 5% then you probably should leave that feature or sample out. We therefore check for features (columns) and samples (rows) where more than 5% of the data is missing using a simple function
+
+### **Classification of missing data**
+```{r}
+pMiss <- function(x){sum(is.na(x))/length(x)*100}
+missing.bycol <- apply(properties,2,pMiss)
+missing.byrow <-  apply(properties,1,pMiss)
+
+```
+
+
+```{r}
+missdata.df <- as.data.frame(missing.bycol)
+setDT(missdata.df, keep.rownames = TRUE)
+names(missdata.df) <- c('Col_Names', 'pct_missing')
+
+g<-ggplot(data = missdata.df , aes(x= reorder(Col_Names, pct_missing), y=pct_missing)) + geom_bar(stat = "identity",aes(fill = pct_missing), position = position_stack(reverse= TRUE)) + coord_flip()
+g
+```
+
+###**Visulization the columns more than 20% missing value**
+```{r}
+
+#head(missdata.df)
+missdata.df20 <- missdata.df %>% filter (pct_missing>=20) 
+g1<-ggplot(data = missdata.df20  , aes(x= reorder(Col_Names, pct_missing), y=pct_missing)) + geom_bar(stat = "identity",aes(fill = pct_missing), position = position_stack(reverse= TRUE)) + coord_flip()
+g1
+```
+
+
+>Missing values that exist in more than 20% of samples may be removed from the data, which is called “80% rule”.
+
+
+###**Remove variables with missing > 20%**
+
+```{r}
+
+mis_prop <- sapply(properties, function(x) sum(is.na(x))/length(x))
+var_rm <- names(mis_prop)[mis_prop > 1 - 0.8]
+var_rm 
+```
+
+> After removing variables with more than 20% missing values, dataset  had 29 variables remaining. The rest of the analysis in this project will focus on these variables.
+
+###**Glimpse of the dataset**
+
+```{r}
+df_rm_na <- properties[, !colnames(properties) %in% var_rm]
+
+dim(df_rm_na)
+```
+
+
+```{r}
+str(df_rm_na)
+```
+
+#**Descriptive Analyis of Data**
+
+##**Descriptive analysis one**
+
+```{r}
+#Subset assigned columns from original daqta set
+col_index<-c(2:9)
+juanelle<-df_rm_na[,col_index]
+head(juanelle)
+```
+
+>Since the data under each of the above variables in this subset are categorical in nature, the reseacher chose to  first use the table and summary function to  gain a sense of the proportion of each level under each variable.
+
+####**Bedroom Count**
+The variable 'bedroomcnt' provides information on the nummber of bedrooms in a home.
+```{r}
+table(juanelle$bedroomcnt)
+summary(juanelle$bedroomcnt)
+```
+The above summary shows that the homes in the data set have an average of 3.093 bedrooms.The maximum amount of bedrooms found in homes in the data set is 25 and the minimum 0. Homes with bedromm counts 19,21,23,24 and 25 are outliers in this analysis as shown in the boxplot below. It is obvious that the distribution is unimodal and skewed to the right.
+
+```{r}
+boxplot(juanelle$bedroomcnt)
+```
+
+
+####**Bathroom count**
+>Description of variable according to data dictionary: Number of bathrooms in home including fractional bathroom.
+
+```{r}
+
+bathroomcnt<-table(juanelle$bathroomcnt)
+bathroomcnt
+summary(juanelle$bathroomcnt)
+
+```
+
+####**Calculated bathroom number**
+>Description of variable according to data dictionary: Number of bathrooms in home including fractional bathroom.
+
+```{r}
+table(juanelle$calculatedbathnbr)
+summary(juanelle$calculatedbathnbr)
+```
+
+
+> From observation, bathroomcnt and calculatedbathnber provide the same information. However, the latter has far more missing values. Thus, bathoom count  is the ideal variable to use to provide information on number of bathrooms, inclusive of fractional bathroom in homes. Shown below is a barplot visualising the distribution of bathroom count. The distribution is unimodal and skewed to the right.
+
+```{r}
+barplot(bathroomcnt, main = "Bathroom Count")
+```
+
+
+
+
+####**Full bath count**
+Description of variable according to data dictionary: Number of full bathrooms (sink, shower + bathtub, and toilet) present in home
+```{r}
+fullbath<-table(juanelle$fullbathcnt)
+fullbath
+summary(juanelle$fullbathcnt)
+```
+
+>Based on the summary, the maximum number of full bathroom's in the data set is 32 and minimum 1. Shown below are two visualisations of this information:
+
+```{r}
+barplot(fullbath, main = " Full Bath Count")
+```
+> Thus visualisation shows that the distribution is unimodal and right skewed with the center being somewhere between two and three.
+
+
+```{r}
+boxplot(juanelle$fullbathcnt)
+```
+>The box above shows that there are a significant amount of outliers in this data set.
+
+####**Hot Tub or Spa**
+>Description of variable according to data dictionary: This variable indicates whether or noy a home has a hot tub or spa
+
+```{r}
+summary(juanelle$hashottuborspa)
+```
+> Based on the summary on hottuborspa, There are 50062 homes in the data set with hottub or spa
+
+####**Finished Square Feet**
+>Description of variable according to data dictionary: Finished total living room area of home
+
+```{r}
+# table(juanelle$calculatedfinishedsquarefeet)
+summary(juanelle$calculatedfinishedsquarefeet)
+```
+
+####**Finished  Square feet 12**
+>Description of variable according to data dictionary:Finished living area
+
+```{r}
+#table(juanelle$finishedsquarefeet12)
+summary(juanelle$finishedsquarefeet12)
+```
+
+####**Federal Information Processing Standard Code (FIPS)**
+>Description of variable according to data dictionary:
+
+```{r}
+table(juanelle$fips)
+summary(juanelle$fips)
+```
+
+##**Descriptive analysis two**
+
+####**Regionidcity**
+
+>Based on regionidcity variable, the grouped longitude and latitude values were extracted and mean longitude and latitude were calculated. This geographic interactive widget displays where regionid is in relation to a regional map. We can determine the dataset contains properties within Southern California.
+
+```{r}
+properties %>% 
+  count(regionidcity)
+
+city_pal <- colorFactor("Set2", properties$regionidcity)
+
+df_rm_na %>% 
+  group_by(regionidcity = as.factor(regionidcity)) %>% 
+  summarise(avg_lng = mean(longitude/1e6, na.rm = T),
+            avg_lat = mean(latitude/1e6, na.rm =T)) %>% 
+  leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>% 
+  addCircleMarkers(lng = ~avg_lng, lat = ~avg_lat, color = ~city_pal(regionidcity),
+                   stroke = FALSE, fillOpacity = 0.8, popup = ~regionidcity)
+```
+
+
+####**Connecting to Google Maps API and pulling Long/Lat location**
+
+>To add detailed mapping to our analysis, a Google Map link was established using the Google Map API. This portion of code demonstrates the connection and map pull using the average longitude and latitude information above.
+
+```{r}
+col_index<-c(10,11,16,23:29)
+calvin<-df_rm_na[,col_index]
+
+col_index<-c(1,2,5,6)
+houses <- calvin[,col_index]
+houses <- setDT(houses) %>% sample_frac(.01)
+houses[, longitude := ifelse(longitude > 1e+10, longitude/1e+07, longitude/1e+06)]
+houses[is.na(longitude), longitude := -118.255]
+houses[, latitude := ifelse(is.na(latitude), 34.049, latitude/1e+06)]
+houses[is.na(taxvaluedollarcnt), taxvaluedollarcnt := median(taxvaluedollarcnt, na.rm = TRUE)]
+
+register_google(key = "AIzaSyCkdfkuRrcEbtgWtW6a2c5CNqjIjk6pfgY")
+ggmap_credentials()
+mapa <- get_map(location = c(lon = -118.255, lat = 34.049), zoom = 8, maptype = "hybrid") 
+```
+
+####**Rawcensustractandblock**
+>Census tract and block ID combined - also contains blockgroup assignment by extension
+
+>Census tracts are geographic entities within counties and identified by a 4-digit basic code between 0001 and 9999, and may have a 2-digit suffix ranging from .01 to .98; for example, 6059.02. Census tracts are made up of census blocks. Even though a block code only occurs once in each tract, it may be used again in another tract. Blocks within tracts are identified by a 4-digit code.
+
+>If you paste these codes together, identifying each block requires the full 15 digits. For example, the census block containing the Office of the California Secretary of State, located at 1500 11th St, Sacramento, CA 95814, is fully identified by the code 06|067|001101|1085
+06 – identifies California,
+067 – identifies Sacramento County within California,
+001101 – identifies Census Tract 11.01 within Sacramento County 
+1085 – identifies Census Block 1085 within tract 11.01.
+
+####**Recommend to keep rawcensustractandblock**
+
+>The raw data contained within rawcensustractandblock is unmodified and better suited for our analysis. We will therefore utilize this variable for further analysis.
+
+
+####**Censustractandblock**
+
+>Census tract and block ID combined - also contains blockgroup assignment by extension
+
+
+####**Assessmentyear**
+
+>The year of the property tax assessment 
+
+>Here, we were able to utilize the Google Map pull and insert assessmentyear variable unto it:
+
+```{r}
+ggmap(mapa) +
+  geom_point(data = houses, aes(x = longitude, y = latitude, color = assessmentyear, alpha = 0.8)) +
+  scale_colour_gradient2(low = "darkred", mid = "white", high = "yellow", midpoint = 2015, space = "Lab", na.value =     "grey50", guide = "colourbar") +
+  theme(legend.position = "null", axis.title.x = element_blank(), axis.title.y = element_blank())
+```
+
+
+####**Landtaxvaluedollarcnt**
+
+>The assessed value of the land area of the parcel
+
+>Assessors generally use the market value of land to help determine the assessed land value of a property. If private sales of similar properties cannot be located, assessors may have to use development cost to help determine assessed values. Land information can include recent sales, location, permitted land use and other market related factors.  When assessors determine the value of the property, they include the land at its market value, plus the buildings and other structures at their depreciated replacement cost. Once the assessors calculate the fair value of the land, they then calculate the value of the buildings on the land.
+
+```{r}
+summary(calvin$landtaxvaluedollarcnt)
+```
+
+
+####**Structuretaxvaluedollarcnt**
+
+>The assessed value of the built structure on the parcel
+
+>Improvements refer to buildings and permanent structures on the land.  The most common way to determine these values is to consider how much money it would take at the current material and labor costs to replace your building with one like it.  If the building is not new, consideration must also be given to how much it has depreciated.  To be able to determine the value of any piece of property, it is necessary for the assessor to know what it might cost today to replace it, the selling price of similar properties and many other facts.  Building information can include building size, features, type of construction, materials used, age, condition and quality of construction.  Also considered are factors such as flooring, plumbing fixtures, furnaces, and finished basement rooms.
+
+```{r}
+summary(calvin$structuretaxvaluedollarcnt)
+```
+
+
+####**Taxvaluedollarcnt**
+
+>The total tax assessed value of the parcel
+
+>Property taxes are calculated on the assessed value of property.  Property assessment provides the basis for determining each person’s fair share of taxes in proportion to the amount his or her individual property is worth. The final assessed value is used by government (territorial, city, town, village, etc….) to determine the amount of taxes payable by the property owner. 
+
+>Here, we were able to utilize the Google Map pull and insert taxvaluedollarcnt variable unto it.
+
+```{r}
+summary(calvin$taxvaluedollarcnt)
+
+ggmap(mapa) +
+  geom_point(data = houses, aes(x = longitude, y = latitude, color = taxvaluedollarcnt, alpha = 1/1000)) +
+  scale_colour_gradient2(low = "darkred", mid = "white", high = "yellow", midpoint = 250000, space = "Lab", na.value =     "grey50", guide = "colourbar") +
+  theme(legend.position = "null", axis.title.x = element_blank(), axis.title.y = element_blank())
+```
+
+
+####**Taxamount**
+
+>The total property tax assessed for that assessment year
+
+>Assessors do not collect taxes or determine the amount of taxes to be collected.  This is left up to the Municipality in which in which the property recides.  Assessors do determine the fair value of a property so that taxes can be calculated.
+
+```{r}
+plt <- qplot(calvin$taxamount, geom="histogram", binwidth = 1000, main = "Distribution of Tax Amount", ylab =    "Frequency", xlab       = "Tax Amount", fill=I("blue"), col=I("red"), alpha=I(.2), xlim=c(5000,30000)) + 
+      theme(axis.text.y = element_text(angle=45))
+
+suppressWarnings(print(plt))
+```
+
+####**Tax Formula**
+
+landtaxvaluedollarcnt + structuretaxvaluedollarcnt = taxvaluedollarcnt
+
+taxamount = taxable % (determined by municipality) * taxvaluedollarcnt
+
+
+####**Taxdelinquencyflag**
+
+>Property taxes for this parcel are past due as of 2015
+
+>Tax payments must be postmarked by the due date in order to be processed as a timely payment. This variable shows properties with a past due property tax as of 2015. This could mean that the property has a property-tax lien on it. A property-tax lien is a legal claim against a property for unpaid property taxes. A tax lien prohibits a property from being sold or refinanced until the taxes are paid and the lien is removed.
+
+
+##**Descriptive analysis three**
+
+```{r}
+
+
+#str(df_rm_na)
+
+#what are property types like-count
+PropertyLandUsedDesc <- function(propertylandusetypeid)
+{  propertylandusetypeid<- as.character(propertylandusetypeid)
+if (propertylandusetypeid== 31)
+{
+   return ('Commercial/Office/Residential Mixed Used')
+
+}
+else if (propertylandusetypeid== 46)
+{
+   return ('Multi-Story Store')
+}
+else if (propertylandusetypeid== 47)
+{
+   return ('Store/Office (Mixed Use)')
+}
+else if (propertylandusetypeid== 246)
+{
+   return ('Duplex (2 Units, Any Combination)')
+}
+else if (propertylandusetypeid== 247)
+{
+   return ('Triplex (3 Units, Any Combination)')
+}
+else if (propertylandusetypeid== 248)
+{
+   return ('Quadruplex (4 Units, Any Combination)')
+}
+else if (propertylandusetypeid== 260)
+{
+   return ('Residential General')
+}
+else if (propertylandusetypeid== 261)
+{
+   return ('Single Family Residential')
+}
+else if (propertylandusetypeid== 262)
+{
+   return ('Rural Residence')
+}
+else if (propertylandusetypeid== 263)
+{
+   return ('Mobile Home')
+}
+else if (propertylandusetypeid== 264)
+{
+   return ('Townhouse')
+}
+else if (propertylandusetypeid== 265)
+{
+   return ('Cluster Home')
+}
+else if (propertylandusetypeid== 266)
+{
+   return ('Condominium')
+}
+else if (propertylandusetypeid== 267)
+{
+   return ('Cooperative')
+}
+else if (propertylandusetypeid== 268)
+{
+   return ('Row House')
+}
+else if (propertylandusetypeid== 269)
+{
+   return ('Planned Unit Development')
+}
+else if (propertylandusetypeid== 270)
+{
+   return ('Residential Common Area')
+}
+else if (propertylandusetypeid== 271)
+{
+   return ('Timeshare')
+}
+else if (propertylandusetypeid== 273)
+{
+   return ('Bungalow')
+}
+else if (propertylandusetypeid== 274)
+{
+   return ('Zero Lot Line')
+}
+else if (propertylandusetypeid== 275)
+{
+   return ('Manufactured, Modular, Prefabricated Homes')
+}
+else if (propertylandusetypeid== 276)
+{
+   return ('Patio Home')
+}
+else if (propertylandusetypeid== 279)
+{
+   return ('Inferred Single Family Residential')
+}
+else if (propertylandusetypeid== 290)
+{
+   return ('Vacant Land - General')
+}
+else if (propertylandusetypeid==291)
+{
+   return ('Residential Vacant Land')
+}
+else
+{
+   return ('Not Determined')
+}
+}
+
+#visualisation of property types count
+
+```
+
+
+#**Machine Learning Model**
+
+##**Using Machine learning model to figure out whether we can predict the Zillow house price (Close to acutal logerror )**
+
+
+##**Load train table**
+
+```{r}
+
+### load dataset with logerror 
+traindf <- dbGetQuery(conn, "select * from train_2017")
+### mearge datasets from properities and dataset with logerror
+target_df <- merge.data.frame(traindf, df_rm_na,by="parcelid")
+```
+
+
+##**Preparation of the datast for ML.** 
+
+##**Data Cleansing**
+
+
+```{r}
+# Organize numeric and and categorical data
+#Convert some coulumns such as propertylandusetypeid , fips to category data 
+target_df$propertylandusetypeid<-factor(target_df$propertylandusetypeid)
+target_df$fips <- factor (target_df$fips)
+```
+
+
+####**Dealing with missing binary values in columns . Change all NA value to -1 according to Kaggle suggestions**
+
+```{r}
+### build function to fill in NA value and clean data in the fireplaceflag column
+flagColClean <- function(emp)
+{  emp<- as.character(emp)
+if (emp=="NA"  | emp =="")
+{
+   
+    return (-1)
+}
+
+else 
+{
+    return (1)
+}
+
+}
+
+target_df$fireplaceflag<- sapply( target_df$fireplaceflag, flagColClean)
+target_df$fireplaceflag<- factor( target_df$fireplaceflag )
+ 
+```
+
+
+
+```{r}
+### build function to fill in NA value and clean data in the ftaxdelinquencyflag column
+flagcol <- target_df %>% select (contains('flag'))
+
+flagColClean <- function(emp)
+{  emp<- as.character(emp)
+if (emp=="NA"  | emp =="")
+{
+   
+    return (-1)
+}
+
+else 
+{
+    return (1)
+}
+
+}
+
+target_df$taxdelinquencyflag<- sapply( target_df$taxdelinquencyflag, flagColClean)
+target_df$taxdelinquencyflag<- factor( target_df$taxdelinquencyflag )
+
+
+###  Extract Month from transactionDate variable
+ 
+target_df$transactionMonth <- as.POSIXlt(target_df$transactiondate, format="%Y-%m-%d") $mon
+ 
+
+
+```
+ 
+
+####**Get unique value per parcelid**
+
+```{r}
+### Make sure there is no duplicated rows per parcelid  (Remove duplicate records based on the parcelid)
+target_df <- target_df %>% distinct(parcelid, .keep_all = TRUE)
+rownames(target_df) <- target_df$parcelid
+
+#remove all rows with NA value
+target_df2 <- target_df[complete.cases(target_df), ]
+ 
+```
+ 
+  
+####**Feature Engineering **
+
+>The purpose of this section is to reorganize some columns in the dataset and to create new variables.
+ 
+```{r}
+# Create yearbuilt col to caluclate the life of property
+target_df$yearbuilt[is.na(target_df$yearbuilt)]<-median(target_df$yearbuilt,na.rm=T)
+target_df2$N.HousYear = 2018 -target_df2$yearbuilt
+
+# create .LivingAreaProp col to find the living area per total lot 
+target_df2$N.LivingAreaProp =target_df2$calculatedfinishedsquarefeet /target_df2$lotsizesquarefeet
+
+#  Create N.ExtraSpace to indicate the size of area besides of the living area 
+target_df2$N.ExtraSpace =target_df2$lotsizesquarefeet -target_df2$calculatedfinishedsquarefeet
+  
+# Total number of bed rooms
+target_df2$N.TotalRooms =target_df2$bathroomcnt +target_df2$bedroomcnt
+
+#  create var to indicate the average room size
+target_df2$N.AvRoomSize  =target_df2$calculatedfinishedsquarefeet/target_df2$N.TotalRooms
+
+#  create var to indicate how many extra rooms avaiable besides of bed romm
+target_df2$N.ExtraRooms =target_df2$roomcnt -target_df2$N.TotalRooms
+
+# Ratio of the built structure value to land area
+target_df2$N.ValueProp =target_df2$structuretaxvaluedollarcnt /target_df2$landtaxvaluedollarcnt
+```
+
+
+```{r}
+### Deal with latitude and longitude data 
+target_df2$latitude = as.numeric(target_df2$latitude)
+target_df2$longitude= as.numeric(target_df2$longitude)
+target_df2$N.location  = target_df2$latitude +target_df2$longitude 
+target_df2$N.location2  = as.numeric(target_df2$latitude/target_df2$longitude )
+
+#  Count the number of properties per region 
+city_count  <-  count(target_df2, regionidcity)
+names(city_count) <- c('regionidcity','City_Count')
+target_df2<-merge(x=target_df2,y=city_count,by="regionidcity" ,all=TRUE)
+
+#  Count the number of properties per  County
+county_count  <-  count(target_df2, regionidcounty)
+names(county_count) <- c('regionidcounty','County_Count')
+target_df2<-merge(x=target_df2,y=county_count,by="regionidcounty" ,all=TRUE)
+
+ #  Count the number of properties per area (located in the same zip area)
+zip_count  <-  count(target_df2, regionidzip)
+names(zip_count) <- c('regionidzip','Zip_Count')
+target_df2<-merge(x=target_df2,y= zip_count  ,by="regionidzip" ,all=TRUE)
+
+# Create variable to get the amount of tax per 
+target_df2$N.ValueRatio  =   target_df2$taxamount /target_df2$taxvaluedollarcnt
+
+# Create variable to get the total amount of tax 
+target_df2$N.TaxScore  =target_df2$taxvaluedollarcnt*target_df2$taxamount 
+
+  
+ 
+
+```
+
+
+####**Finalize features **
+ 
+```{r}
+## remove columns with free text 
+target_df2 <- target_df2 %>% select (-contains('propertyzoningdesc'), -contains('itude'), -starts_with('year'),-contains('itude'), -contains('rowcensus'),-contains('transactiondate'), -contains('regionid'), -contains('assessmentyear'))  
+
+## list all datatype of datafame 
+split(names(target_df2),sapply(target_df2, function(x) paste(class(x), collapse=" ")))
+
+```
+ 
+###**Normalizing the Numeric Data**
+
+> In this section we will normalize the numeric data so as to change the shape of the distribution.
+
+```{r} 
+### Find all numerical and categorical columns
+
+numcol <- sapply(target_df2,is.numeric) 
+
+### Manuaully change logerror and awcensustractandblock into categorical data because we do not want to normalize those two columns. 
+numcol['logerror'] <- FALSE
+numcol ['rawcensustractandblock'] <- FALSE
+numcol_df<- as.data.frame(numcol)
+numcol_df <- setDT(numcol_df, keep.rownames = TRUE)[]
+names(numcol_df) <- c ("ColName","IsNumeric")
+Numeric_col <- numcol_df %>% filter (IsNumeric==TRUE)
+Numeric_col <- Numeric_col$ColName
+
+
+###  build scaling function 
+normfun <- function(x) (x - min(x))/(max(x)-min(x))
+
+### apply the function on all the numeric data 
+for (i in Numeric_col)
+{
+    {target_df2[i] <- lapply(target_df2[i], normfun)}
+  
+}
+  
+
+```
+
+
+##**Further Data Cleansing**
+
+>There are some categorical variables with text data or multiple levels. These variables needed to be further cleaned up. 
+
+```{r}
+###  change 
+target_df2$fips = as.numeric(factor(target_df2$fips, 
+                                      levels = c("6037", "6059" ,"6111"),
+                                      labels = c(1, 2, 3)))
+ 
+
+target_df2$hashottuborspa = as.numeric(factor(target_df2$hashottuborspa, 
+                                      levels = c(""   ,  "true"),
+                                      labels = c(-1, 1)))
+ 
+ 
+```
+
+###**Convert propertycountylandusecode**
+
+####**Transform categorical variables**
+```{r}
+landCodeClean <- function(emp)
+{  emp<- as.character(emp)
+if (emp=="0100" )
+{
+   
+    return (1)
+}
+
+else if (emp=="22") 
+{
+    return (2)
+}
+
+else if (emp=="010C") 
+{
+    return (3)
+}
+else 
+{
+  return (4)
+}
+
+}
+
+
+
+target_df2$propertycountylandusecode<- sapply( target_df2$propertycountylandusecode, landCodeClean)
+target_df2$propertycountylandusecode<- factor(target_df2$propertycountylandusecode )
+
+
+
+
+```
+
+
+```{r}
+propertypeClean <- function(emp)
+{  emp<- as.character(emp)
+if (emp=="261" )
+{
+   
+    return (1)
+}
+
+else if (emp=="266") 
+{
+    return (2)
+}
+
+else if (emp=="269") 
+{
+    return (3)
+}
+else 
+{
+  return (4)
+}
+
+}
+
+
+target_df2$propertylandusetypeid<- sapply( target_df2$propertylandusetypeid, propertypeClean)
+target_df2$propertylandusetypeid<- factor( target_df2$propertylandusetypeid )
+
+```
+
+
+
+### **Finalized_dataset **
+```{r}
+
+dataset <- target_df2
+
+str(dataset)
+```
+
+```{r}
+dataset <- dataset %>% select(-contains("parcelid")) 
+```
+
+
+
+##**Use of H2o to build machine learning models ** 
+
+> H2O is an open source, in-memory, distributed, fast, and scalable machine learning and predictive analytics platform that allows you to build machine learning models on big data and provides easy productionalization of those models in an enterprise environment.
+ 
+
+```{r}
+#install.packages('h2o')
+######################################
+# Setup h2o
+######################################
+h2o.init(nthreads = -1, max_mem_size = '8g', ip = "127.0.0.1")
+
+###  split dataset  Best approach by using the Gridsearch  (Skipped in the project )
+
+datah2o <- as.h2o(dataset)
+splits <- h2o.splitFrame(data = datah2o, 
+                         ratios = c(0.7, 0.15),  #
+                         seed = 1)  #setting a seed will guarantee reproducibility
+
+### split dataset into train , valid and test dataset 
+train <- splits[[1]]
+valid <- splits[[2]]
+test <- splits[[3]]
+
+
+# Identify predictors and response
+### Y is our target variable to predict 
+y <- "logerror"
+
+### chose all variables except our taraget variable
+x <- names(train)[which(names(train)!="logerror")]
+
+### list all features /varaiables
+print(x)
+
+```
+
+
+
+```{r}
+## Show number of records in the each dataset 
+nrow(train)  # 114908
+nrow(valid) # 24498
+nrow(test)  # 24581
+```
+
+####**Basic implementation by using default parameter**
+
+>We chose Boosting algorithms as our ML method .We chose boosting algorithms because they are extremely popular machine learning algorithms that have proven successful across many domains and is one of the leading methods for winning Kaggle competitions. Whereas random forests build an ensemble of deep independent trees, GBMs build an ensemble of shallow and weak successive trees with each tree learning and improving on the previous. When combined, these many weak successive trees produce a powerful “committee” that are often hard to beat with other algorithms. 
+
+>Gradient Boosting Machine (for Regression and Classification) is a forward learning ensemble method. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations. H2O’s GBM sequentially builds regression trees on all the features of the dataset in a fully distributed way - each tree is built in parallel.
+
+####**For future modelling pruposes**
+
+####**Default parameter in H2O**
+
+```{r}
+# library(h2o)
+# h2o.init(nthreads = -1, max_mem_size = "8g")
+# 
+#  
+# ###  split dataset  Best approach by using the Gridsearch  (Skipped in the project )
+# 
+# datah2o <- as.h2o(dataset)
+# splits <- h2o.splitFrame(data = datah2o, 
+#                          ratios = c(0.7, 0.15),  #
+#                          seed = 1)  #setting a seed will guarantee reproducibility
+# train <- splits[[1]]
+# valid <- splits[[2]]
+# test <- splits[[3]]
+# 
+# 
+# # Identify predictors and response
+# x <- names(train)[which(names(train)!="logerror")]
+# y <- "logerror"
+# print(x)
+```
+
+
+```{r}
+#gbm.fit <- h2o.gbm(
+#  x = x,
+#  y = y,
+#  training_frame = train,
+#  nfolds = 5,
+#  ntrees = 5000,
+ # stopping_rounds = 10,
+ # stopping_tolerance = 0,
+ # seed = 123
+#)
+```
+```{r}
+#h2o.varimp_plot(gbm.fit , num_of_features = 15) 
+#h2o.mae(gbm.fit)
+```
+```{r}
+#h2o.shutdown()
+```
+
+
+####**Tuning of the model** 
+
+>We changed the following  parameters of the model: 
+ 
+>Tree complexity:ntrees: number of trees to train
+max_depth: depth of each tree
+min_rows: Fewest observations allowed in a terminal node
+Learning rate: 
+learn_rate: rate to descend the loss function gradient
+learn_rate_annealing: allows you to have a high initial learn_rate, then gradually reduce as trees are added (speeds up training).
+Adding stochastic nature:
+sample_rate: row sample rate per tree
+col_sample_rate: column sample rate per tree (synonymous with xgboost’s colsample_bytree)
+
+ 
+
+```{r}
+
+# create hyperparameter grid
+hyper_grid <- expand.grid(
+  shrinkage = c(.01, .1, .3),
+  interaction.depth = c(1, 3, 5),
+  n.minobsinnode = c(5, 10, 15),
+  bag.fraction = c(.65, .8, 1), 
+  optimal_trees = 0,               # a place to dump results
+  min_RMSE = 0                     # a place to dump results
+)
+
+
+search_criteria <- list(
+  strategy = "RandomDiscrete",
+  stopping_metric = "mse",
+  stopping_tolerance = 0.005,
+  stopping_rounds = 10,
+  max_runtime_secs = 60*60
+  )
+#
+# perform grid search 
+grid <- h2o.grid(
+  algorithm = "gbm",
+  grid_id = "gbm_grid2",
+  x = x, 
+  y = y, 
+  training_frame = train,
+  validation_frame = valid,
+  #hyper_params = hyper_grid,
+  search_criteria = search_criteria, # add search criteria
+  ntrees = 5000,
+  stopping_rounds = 10,
+  stopping_tolerance = 0,
+  seed = 123
+  )
+
+# collect the results and sort by our model performance metric of choice
+grid_perf <- h2o.getGrid(
+  grid_id = "gbm_grid2", 
+  sort_by = "mse", 
+  decreasing = FALSE
+  )
+grid_perf
+```
+```{r}
+#h2o.shutdown()
+```
+
+
+####**Select best performing model.** 
+
+>In statistics, the mean squared error (MSE) or mean squared deviation (MSD) of an estimator (of a procedure for estimating an unobserved quantity) measures the average of the squares of the errors—that is, the average squared difference between the estimated values and what is estimated.
+
+>We identified that the top model is through the lowest MSE score. 
+
+
+```{r}
+best_model_id <- grid_perf@model_ids[[1]]
+best_model <- h2o.getModel(best_model_id)
+h2o.performance(model = best_model, valid = TRUE)
+```
+ 
+###**Create Final data model based on the best parameters found**
+```{r}
+# Using the best parameters to run the ML model 
+h2o.final <- h2o.gbm(
+  x = x,
+  y = y,
+  training_frame = train,
+  nfolds = 5,
+  ntrees = 10000,
+  learn_rate = 0.05,
+  learn_rate_annealing = 0.99,
+  max_depth = 5,
+  min_rows = 10,
+  sample_rate = 0.75,
+  col_sample_rate = 1,
+  stopping_rounds = 10,
+  stopping_tolerance = 0,
+  seed = 123
+)
+
+```
+
+ 
+###**Check model's performance** 
+
+>We found that the MSE score is 0.026 with the current model. 
+
+```{r}
+
+h2o.performance(model =best_model , newdata = as.h2o(test))
+```
+
+
+###**Visualizing variable influence on house prices**
+
+>After re-running our final model we likely want to understand the variables that have the largest influence on house sale price. 
+We found that variables such as house build, year and tax amount are strongly associated with the house price.  
+
+```{r}
+h2o.varimp_plot(h2o.final, num_of_features = 15)
+
+```
+
+
+>We can now apply the model to our two observations. The results show the predicted value, local model fit (both are relatively poor), and the most influential variables driving the predicted value for each observation.
+
+>We used LIME function (LIME is a newer procedure for understanding why a prediction resulted in a given value for a single observation.)
+
+>We can now apply to our two observations. The results show the predicted value (Case 1: 0.0141, Case 2: 0.00997). 
+
+```{r}
+#install.packages('lime')
+
+ 
+local_obs <- as.data.frame(test[1:2, ])
+local_obs$logerror
+explainer <- lime(as.data.frame(train), h2o.final)
+explanation <- explain(local_obs, explainer, n_features = 5)
+plot_features(explanation)
+```
+
+
+
+```{r}
+#h2o.shutdown()
+```
+
+
+
+###**Predicting**
+ 
+ 
+```{r}
+h2o.performance(model = h2o.final, newdata = as.h2o(test))
+```
+ 
+##**Summary** 
+
+>The MAE score provided by the current model is close to other models published on the Kaggle website. This result can be further improved with grid-search and ensemble methods.   
+
+
+
+
+
+ 
